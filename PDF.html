@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高级PDF/图片转换工具</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        
+        :root {
+            --dark-bg: #121212;
+            --card-bg: #1e1e1e;
+            --card-border: #333;
+            --button-bg: #2c2c2c;
+            --button-hover: #3a3a3a;
+            --text: #e0e0e0;
+            --text-muted: #aaa;
+            --accent: #4a6fa5;
+            --accent-hover: #5a7fb5;
+        }
+        
+        body {
+            background-color: var(--dark-bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--card-border);
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+        
+        header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            flex: 1;
+            min-width: 280px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        }
+        
+        .card h2 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            font-weight: 400;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--card-border);
+        }
+        
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            background-color: var(--button-bg);
+            color: var(--text);
+            border: 1px solid var(--card-border);
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn:hover {
+            background-color: var(--button-hover);
+            border-color: #444;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .btn-primary {
+            background-color: var(--accent);
+            border-color: var(--accent);
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--accent-hover);
+            border-color: var(--accent-hover);
+        }
+        
+        .preview-area {
+            margin-top: 20px;
+        }
+        
+        .preview-title {
+            margin-bottom: 15px;
+            color: var(--text-muted);
+            font-size: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .preview-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
+            margin-top: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 5px;
+            border: 1px solid var(--card-border);
+            min-height: 150px;
+        }
+        
+        .preview-item {
+            position: relative;
+            overflow: hidden;
+            background: #2c2c2c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 120px;
+            border: 1px solid #333;
+            cursor: move;
+        }
+        
+        .preview-item img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .preview-item .page-number {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 30px 20px;
+            color: var(--text-muted);
+            grid-column: 1 / -1;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .progress-bar {
+            height: 6px;
+            background: #333;
+            overflow: hidden;
+            margin-top: 10px;
+            display: none;
+        }
+        
+        .progress {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .instructions {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 20px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            border-top: 1px solid var(--card-border);
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>高级PDF/图片转换工具</h1>
+            <p>将图片转换为PDF或将PDF分解为图片 - 支持拖拽排序</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="card">
+                <h2>图片转PDF</h2>
+                <div class="card-content">
+                    <div class="btn-group">
+                        <button class="btn" onclick="document.getElementById('imageInput').click()">
+                            选择图片
+                        </button>
+                        <button id="toPdfBtn" class="btn btn-primary" disabled>
+                            生成PDF
+                        </button>
+                    </div>
+                    
+                    <p class="instructions">支持拖拽图片调整顺序 | 多选图片或多次添加</p>
+                    
+                    <input type="file" id="imageInput" class="file-input" accept="image/*" multiple>
+                    
+                    <div class="preview-area">
+                        <div class="preview-title">
+                            <span>图片预览</span>
+                            <span id="imageCount">0 张图片</span>
+                        </div>
+                        <div class="preview-container" id="imagePreview">
+                            <div class="empty-state">
+                                <p>选择图片后，预览将显示在这里</p>
+                                <p>拖拽图片可调整顺序</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-bar" id="pdfProgress">
+                        <div class="progress"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>PDF转图片</h2>
+                <div class="card-content">
+                    <div class="btn-group">
+                        <button class="btn" onclick="document.getElementById('pdfInput').click()">
+                            选择PDF文件
+                        </button>
+                        <button id="toImagesBtn" class="btn btn-primary" disabled>
+                            提取图片
+                        </button>
+                    </div>
+                    
+                    <input type="file" id="pdfInput" class="file-input" accept=".pdf">
+                    
+                    <div class="preview-area">
+                        <div class="preview-title">
+                            <span>PDF页面预览</span>
+                            <span id="pageCount">0 页</span>
+                        </div>
+                        <div class="preview-container" id="pdfPreview">
+                            <div class="empty-state">
+                                <p>选择PDF后，页面预览将显示在这里</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-bar" id="imageProgress">
+                        <div class="progress"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>© 2023 高级PDF/图片转换工具 | 使用jsPDF和PDF.js构建</p>
+        </footer>
+    </div>
+
+    <script>
+        // 设置PDF.js worker路径
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
+        const { jsPDF } = window.jspdf;
+        
+        // DOM元素
+        const imageInput = document.getElementById('imageInput');
+        const pdfInput = document.getElementById('pdfInput');
+        const toPdfBtn = document.getElementById('toPdfBtn');
+        const toImagesBtn = document.getElementById('toImagesBtn');
+        const imagePreview = document.getElementById('imagePreview');
+        const pdfPreview = document.getElementById('pdfPreview');
+        const imageCount = document.getElementById('imageCount');
+        const pageCount = document.getElementById('pageCount');
+        const pdfProgress = document.getElementById('pdfProgress');
+        const imageProgress = document.getElementById('imageProgress');
+        const pdfProgressBar = pdfProgress.querySelector('.progress');
+        const imageProgressBar = imageProgress.querySelector('.progress');
+        
+        let images = [];
+        let pdfFile = null;
+        
+        // 初始化图片拖拽排序
+        let sortable = null;
+        
+        // 图片转PDF功能
+        imageInput.addEventListener('change', function(e) {
+            const files = e.target.files;
+            if (files.length === 0) return;
+            
+            // 移除空状态
+            const emptyState = imagePreview.querySelector('.empty-state');
+            if (emptyState) emptyState.remove();
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const reader = new FileReader();
+                
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    
+                    img.onload = function() {
+                        // 创建预览元素
+                        const previewItem = document.createElement('div');
+                        previewItem.className = 'preview-item';
+                        previewItem.setAttribute('data-id', images.length);
+                        
+                        const imgElement = document.createElement('img');
+                        imgElement.src = event.target.result;
+                        
+                        const pageNum = document.createElement('div');
+                        pageNum.className = 'page-number';
+                        pageNum.textContent = images.length + 1;
+                        
+                        previewItem.appendChild(imgElement);
+                        previewItem.appendChild(pageNum);
+                        imagePreview.appendChild(previewItem);
+                        
+                        // 保存图片数据
+                        images.push({
+                            src: event.target.result,
+                            width: img.width,
+                            height: img.height,
+                            element: previewItem
+                        });
+                        
+                        // 更新计数
+                        imageCount.textContent = images.length + ' 张图片';
+                        
+                        // 初始化或更新拖拽排序
+                        if (!sortable) {
+                            initSortable();
+                        }
+                    };
+                };
+                
+                reader.readAsDataURL(file);
+            }
+            
+            toPdfBtn.disabled = false;
+        });
+        
+        // 初始化拖拽排序
+        function initSortable() {
+            sortable = new Sortable(imagePreview, {
+                animation: 150,
+                onEnd: function(evt) {
+                    // 获取新顺序的索引
+                    const newIndex = evt.newIndex;
+                    const oldIndex = evt.oldIndex;
+                    
+                    // 更新数据数组
+                    const movedItem = images.splice(oldIndex, 1)[0];
+                    images.splice(newIndex, 0, movedItem);
+                    
+                    // 更新页码显示
+                    updatePageNumbers();
+                }
+            });
+        }
+        
+        // 更新图片页码
+        function updatePageNumbers() {
+            const previewItems = imagePreview.querySelectorAll('.preview-item');
+            previewItems.forEach((item, index) => {
+                const pageNum = item.querySelector('.page-number');
+                if (pageNum) {
+                    pageNum.textContent = index + 1;
+                }
+            });
+        }
+
+        // 生成PDF
+        toPdfBtn.addEventListener('click', function() {
+            if (images.length === 0) return;
+            
+            // 显示进度条
+            pdfProgress.style.display = 'block';
+            pdfProgressBar.style.width = '0%';
+            
+            setTimeout(() => {
+                const pdf = new jsPDF();
+                const total = images.length;
+                
+                images.forEach((img, index) => {
+                    if (index > 0) {
+                        pdf.addPage();
+                    }
+                    
+                    const width = pdf.internal.pageSize.getWidth();
+                    const height = pdf.internal.pageSize.getHeight();
+                    
+                    // 计算图片比例以适应PDF页面
+                    const imgRatio = img.width / img.height;
+                    const pdfRatio = width / height;
+                    
+                    let finalWidth, finalHeight;
+                    
+                    if (imgRatio > pdfRatio) {
+                        finalWidth = width;
+                        finalHeight = width / imgRatio;
+                    } else {
+                        finalHeight = height;
+                        finalWidth = height * imgRatio;
+                    }
+                    
+                    pdf.addImage(img.src, 'JPEG', (width - finalWidth) / 2, (height - finalHeight) / 2, finalWidth, finalHeight);
+                    
+                    // 更新进度条
+                    const progress = ((index + 1) / total) * 100;
+                    pdfProgressBar.style.width = `${progress}%`;
+                });
+                
+                pdf.save('images-converted.pdf');
+                
+                // 完成进度条
+                setTimeout(() => {
+                    pdfProgressBar.style.width = '100%';
+                    setTimeout(() => {
+                        pdfProgress.style.display = 'none';
+                    }, 500);
+                }, 300);
+            }, 500);
+        });
+
+        // PDF转图片功能
+        pdfInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            pdfFile = file;
+            pdfPreview.innerHTML = '';
+            
+            // 显示加载状态
+            const loadingState = document.createElement('div');
+            loadingState.className = 'empty-state';
+            loadingState.innerHTML = `<p>正在加载PDF预览...</p>`;
+            pdfPreview.appendChild(loadingState);
+            
+            // 读取PDF
+            const url = URL.createObjectURL(file);
+            pdfjsLib.getDocument(url).promise.then(pdf => {
+                pdfPreview.innerHTML = '';
+                pageCount.textContent = pdf.numPages + ' 页';
+                
+                // 预览第一页
+                renderPage(pdf, 1);
+                
+                toImagesBtn.disabled = false;
+            }).catch(error => {
+                console.error('Error loading PDF:', error);
+                pdfPreview.innerHTML = `
+                    <div class="empty-state">
+                        <p>无法加载PDF文件，请重试</p>
+                    </div>
+                `;
+            });
+        });
+
+        // 渲染PDF页面预览
+        async function renderPage(pdf, pageNumber) {
+            const page = await pdf.getPage(pageNumber);
+            const viewport = page.getViewport({ scale: 0.5 });
+            
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            
+            await page.render({
+                canvasContext: context,
+                viewport: viewport
+            }).promise;
+            
+            // 创建预览元素
+            const previewItem = document.createElement('div');
+            previewItem.className = 'preview-item';
+            
+            const img = document.createElement('img');
+            img.src = canvas.toDataURL('image/jpeg');
+            
+            const pageNum = document.createElement('div');
+            pageNum.className = 'page-number';
+            pageNum.textContent = pageNumber;
+            
+            previewItem.appendChild(img);
+            previewItem.appendChild(pageNum);
+            pdfPreview.appendChild(previewItem);
+            
+            // 移除空状态
+            const emptyState = pdfPreview.querySelector('.empty-state');
+            if (emptyState) emptyState.remove();
+        }
+
+        // 提取图片
+        toImagesBtn.addEventListener('click', async function() {
+            if (!pdfFile) return;
+            
+            // 显示进度条
+            imageProgress.style.display = 'block';
+            imageProgressBar.style.width = '0%';
+            
+            const url = URL.createObjectURL(pdfFile);
+            const pdf = await pdfjsLib.getDocument(url).promise;
+            
+            // 创建zip文件保存所有图片
+            const zip = new JSZip();
+            const imgFolder = zip.folder("pdf_images");
+            const total = pdf.numPages;
+            
+            for (let i = 1; i <= total; i++) {
+                const page = await pdf.getPage(i);
+                const viewport = page.getViewport({ scale: 1.5 });
+                
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                
+                await page.render({
+                    canvasContext: context,
+                    viewport: viewport
+                }).promise;
+                
+                // 添加到zip
+                const blob = await new Promise(resolve => 
+                    canvas.toBlob(resolve, 'image/jpeg', 0.8)
+                );
+                imgFolder.file(`page_${i}.jpg`, blob);
+                
+                // 更新进度条
+                const progress = (i / total) * 100;
+                imageProgressBar.style.width = `${progress}%`;
+            }
+            
+            // 生成并下载zip文件
+            const content = await zip.generateAsync({ type: 'blob' });
+            const zipUrl = URL.createObjectURL(content);
+            const a = document.createElement('a');
+            a.href = zipUrl;
+            a.download = 'extracted_images.zip';
+            a.click();
+            
+            // 清理
+            URL.revokeObjectURL(zipUrl);
+            URL.revokeObjectURL(url);
+            
+            // 完成进度条
+            setTimeout(() => {
+                imageProgressBar.style.width = '100%';
+                setTimeout(() => {
+                    imageProgress.style.display = 'none';
+                }, 500);
+            }, 300);
+        });
+
+        // 初始状态更新
+        imageCount.textContent = '0 张图片';
+        pageCount.textContent = '0 页';
+    </script>
+</body>
+</html>
