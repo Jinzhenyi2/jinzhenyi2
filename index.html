@@ -174,6 +174,21 @@
             font-size: 1.2rem;
         }
         
+        .retry-btn {
+            display: inline-block;
+            padding: 8px 16px;
+            margin-top: 15px;
+            background: #222;
+            color: #e0e0e0;
+            border: 1px solid #333;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        
+        .retry-btn:hover {
+            background: #333;
+        }
+        
         @media (max-width: 768px) {
             .tool-grid {
                 grid-template-columns: 1fr;
@@ -209,14 +224,23 @@
     <script>
         // 从外部JSON文件加载数据
         document.addEventListener('DOMContentLoaded', function() {
-            fetch('tools.json')
+            // 添加时间戳防止缓存问题
+            const timestamp = new Date().getTime();
+            const jsonUrl = 'tools.json?' + timestamp;
+            
+            fetch(jsonUrl)
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error('网络响应错误');
+                        throw new Error(`HTTP错误! 状态: ${response.status}`);
                     }
                     return response.json();
                 })
                 .then(data => {
+                    // 检查数据格式
+                    if (!data.tools || !Array.isArray(data.tools)) {
+                        throw new Error('无效的JSON格式: 缺少tools数组');
+                    }
+                    
                     // 获取所有分类
                     const categories = [...new Set(data.tools.map(tool => tool.category))];
                     categories.unshift("全部"); // 添加"全部"分类
@@ -232,8 +256,7 @@
                 })
                 .catch(error => {
                     console.error('加载工具数据失败:', error);
-                    document.getElementById('tool-grid').innerHTML = 
-                        '<div class="error">无法加载外部JSON文件: ' + error.message + '</div>';
+                    showError(error);
                 });
         });
         
@@ -296,6 +319,24 @@
                     }
                 });
             });
+        }
+        
+        // 显示错误信息
+        function showError(error) {
+            const container = document.getElementById('tool-grid');
+            container.innerHTML = `
+                <div class="error">
+                    <p>无法加载外部JSON文件: ${error.message}</p>
+                    <p>请检查以下可能的原因：</p>
+                    <ul style="text-align: left; max-width: 500px; margin: 20px auto;">
+                        <li>1. tools.json文件不存在</li>
+                        <li>2. JSON文件路径不正确</li>
+                        <li>3. JSON文件格式有错误</li>
+                        <li>4. 网络连接问题</li>
+                    </ul>
+                    <a class="retry-btn" onclick="window.location.reload()">重试加载</a>
+                </div>
+            `;
         }
     </script>
 </body>
