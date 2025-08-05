@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>极简工具集合</title>
+    <title>工具集合 - 外置JSON驱动</title>
     <style>
         * {
             margin: 0;
@@ -18,9 +18,9 @@
             min-height: 100vh;
             line-height: 1.6;
             background-image: 
-                linear-gradient(rgba(30, 30, 30, 0.2) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(30, 30, 30, 0.2) 1px, transparent 1px);
-            background-size: 20px 20px;
+                linear-gradient(rgba(30, 30, 30, 0.15) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(30, 30, 30, 0.15) 1px, transparent 1px);
+            background-size: 25px 25px;
         }
         
         .container {
@@ -40,8 +40,7 @@
             font-size: 2.5rem;
             font-weight: 300;
             margin-bottom: 10px;
-            letter-spacing: 1px;
-            text-transform: uppercase;
+            letter-spacing: 2px;
         }
         
         .subtitle {
@@ -72,6 +71,7 @@
             border-color: #333;
             transform: translateY(-5px);
             background: #1a1a1a;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
         }
         
         .tool-card h3 {
@@ -104,6 +104,8 @@
             color: #aaa;
             font-size: 0.8rem;
             padding: 3px 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         
         .tool-link {
@@ -161,6 +163,15 @@
             padding: 50px 0;
             color: #777;
             grid-column: 1 / -1;
+            font-size: 1.2rem;
+        }
+        
+        .error {
+            text-align: center;
+            padding: 50px 0;
+            color: #d32f2f;
+            grid-column: 1 / -1;
+            font-size: 1.2rem;
         }
         
         @media (max-width: 768px) {
@@ -178,7 +189,7 @@
     <div class="container">
         <header>
             <h1>开发者工具集合</h1>
-            <p class="subtitle">精选实用工具，按类别浏览</p>
+            <p class="subtitle">外置JSON驱动，动态加载工具数据</p>
         </header>
         
         <div class="category-filter" id="category-filter">
@@ -186,76 +197,44 @@
         </div>
         
         <div class="tool-grid" id="tool-grid">
-            <div class="loading">正在加载工具数据...</div>
+            <div class="loading">正在从外部JSON文件加载工具数据...</div>
         </div>
         
         <footer>
-            <p>© 2023 极简工具集合 | 部署在GitHub Pages | 纯前端实现</p>
-            <p style="margin-top: 10px; font-size: 0.85rem;">tools.json驱动 | 无外部依赖</p>
+            <p>© 2023 工具集合 | 部署在GitHub Pages | 外置JSON数据驱动</p>
+            <p style="margin-top: 10px; font-size: 0.85rem;">数据源: tools.json | 纯前端实现</p>
         </footer>
     </div>
 
     <script>
-        // 工具数据 - 实际部署时会从外部JSON文件加载
-        const toolData = {
-            tools: [
-                {
-                    title: "PDF/图片转换",
-                    file: "pdf-tool.html",
-                    category: "文档"
-                },
-                {
-                    title: "Base64编码解码",
-                    file: "base64-tool.html",
-                    category: "编码"
-                },
-                {
-                    title: "颜色格式转换",
-                    file: "color-tool.html",
-                    category: "设计"
-                },
-                {
-                    title: "JSON格式化",
-                    file: "json-tool.html",
-                    category: "开发"
-                },
-                {
-                    title: "二维码生成器",
-                    file: "qr-tool.html",
-                    category: "实用"
-                },
-                {
-                    title: "文本差异比较",
-                    file: "diff-tool.html",
-                    category: "开发"
-                },
-                {
-                    title: "图片压缩工具",
-                    file: "image-compressor.html",
-                    category: "设计"
-                },
-                {
-                    title: "密码生成器",
-                    file: "password-generator.html",
-                    category: "安全"
-                }
-            ]
-        };
-        
-        // 页面加载完成后初始化
+        // 从外部JSON文件加载数据
         document.addEventListener('DOMContentLoaded', function() {
-            // 获取所有分类
-            const categories = [...new Set(toolData.tools.map(tool => tool.category))];
-            categories.unshift("全部"); // 添加"全部"分类
-            
-            // 渲染分类筛选器
-            renderCategoryFilter(categories);
-            
-            // 渲染工具网格
-            renderToolGrid(toolData.tools);
-            
-            // 添加分类按钮事件监听
-            setupCategoryFilters(toolData.tools, categories);
+            fetch('tools.json')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('网络响应错误');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // 获取所有分类
+                    const categories = [...new Set(data.tools.map(tool => tool.category))];
+                    categories.unshift("全部"); // 添加"全部"分类
+                    
+                    // 渲染分类筛选器
+                    renderCategoryFilter(categories);
+                    
+                    // 渲染工具网格
+                    renderToolGrid(data.tools);
+                    
+                    // 添加分类按钮事件监听
+                    setupCategoryFilters(data.tools, categories);
+                })
+                .catch(error => {
+                    console.error('加载工具数据失败:', error);
+                    document.getElementById('tool-grid').innerHTML = 
+                        '<div class="error">无法加载外部JSON文件: ' + error.message + '</div>';
+                });
         });
         
         // 渲染分类筛选器
@@ -318,24 +297,6 @@
                 });
             });
         }
-        
-        // 实际部署时使用此代码加载外部JSON文件
-        /*
-        fetch('tools.json')
-            .then(response => response.json())
-            .then(data => {
-                const categories = [...new Set(data.tools.map(tool => tool.category))];
-                categories.unshift("全部");
-                
-                renderCategoryFilter(categories);
-                renderToolGrid(data.tools);
-                setupCategoryFilters(data.tools, categories);
-            })
-            .catch(error => {
-                console.error('加载工具数据失败:', error);
-                document.getElementById('tool-grid').innerHTML = '<div class="loading">无法加载工具数据</div>';
-            });
-        */
     </script>
 </body>
 </html>
