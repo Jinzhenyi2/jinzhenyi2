@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI API 按量计费计算器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #000;
+            color: #e0e0e0;
+            padding: 20px;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #f5f5f5;
+            font-weight: 300;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            color: #aaa;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .calculator {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        .card {
+            background-color: #222;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #f0f0f0;
+            border-bottom: 1px solid #444;
+            padding-bottom: 10px;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ccc;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #444;
+            border-radius: 6px;
+            background-color: #333;
+            color: #fff;
+            font-size: 1rem;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #666;
+        }
+        
+        .result-card {
+            text-align: center;
+            background-color: #2a2a2a;
+        }
+        
+        .result-title {
+            font-size: 1.2rem;
+            color: #aaa;
+            margin-bottom: 15px;
+        }
+        
+        .result {
+            font-size: 2.5rem;
+            color: #e0e0e0;
+            margin: 15px 0;
+            font-weight: 300;
+        }
+        
+        .result span {
+            font-size: 1.2rem;
+            color: #aaa;
+        }
+        
+        .formula {
+            background-color: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #aaa;
+        }
+        
+        .formula-title {
+            color: #ccc;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        
+        .formula-content {
+            font-family: 'Courier New', monospace;
+            color: #e0e0e0;
+        }
+        
+        .note {
+            background-color: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #aaa;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9rem;
+            border-top: 1px solid #333;
+        }
+        
+        @media (max-width: 768px) {
+            .calculator {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AI API 按量计费计算器</h1>
+            <p class="subtitle">根据您的使用情况计算AI API服务费用</p>
+        </header>
+        
+        <div class="calculator">
+            <div class="card">
+                <h2 class="card-title">计费参数</h2>
+                
+                <div class="input-group">
+                    <label for="group-rate">分组倍率</label>
+                    <input type="number" id="group-rate" min="0.1" step="0.1" value="1.0">
+                </div>
+                
+                <div class="input-group">
+                    <label for="model-rate">模型倍率</label>
+                    <input type="number" id="model-rate" min="0.1" step="0.1" value="1.0">
+                </div>
+                
+                <div class="input-group">
+                    <label for="prompt-tokens">提示token数量</label>
+                    <input type="number" id="prompt-tokens" min="0" value="1000">
+                </div>
+                
+                <div class="input-group">
+                    <label for="completion-tokens">补全token数量</label>
+                    <input type="number" id="completion-tokens" min="0" value="500">
+                </div>
+                
+                <div class="input-group">
+                    <label for="completion-rate">补全倍率</label>
+                    <input type="number" id="completion-rate" min="0.1" step="0.1" value="1.5">
+                </div>
+                
+                <div class="formula">
+                    <div class="formula-title">计费公式</div>
+                    <div class="formula-content">
+                        费用 = 分组倍率 × 模型倍率 × (提示token数 + 补全token数 × 补全倍率) / 500000
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card result-card">
+                <h2 class="card-title">计算结果</h2>
+                <div class="result-title">预估费用</div>
+                <div class="result">$<span id="cost">0.00</span></div>
+                <div class="result-title">消耗总tokens</div>
+                <div class="result"><span id="total-tokens">0</span></div>
+                
+                <div class="note">
+                    * 费用以美元计算<br>
+                    * 实际费用可能因使用情况而略有不同<br>
+                    * 此计算器仅供参考<br>
+                    *计算公式可能不同，以实际费用为主
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>AI API 按量计费计算器 &copy; 2025 | BY JZY </p>
+        </footer>
+    </div>
+
+    <script>
+        // 获取所有输入元素
+        const inputs = document.querySelectorAll('input');
+        
+        // 添加事件监听器
+        inputs.forEach(input => {
+            input.addEventListener('input', calculateCost);
+        });
+        
+        // 初始计算
+        calculateCost();
+        
+        // 计算函数
+        function calculateCost() {
+            // 获取输入值
+            const groupRate = parseFloat(document.getElementById('group-rate').value) || 0;
+            const modelRate = parseFloat(document.getElementById('model-rate').value) || 0;
+            const promptTokens = parseInt(document.getElementById('prompt-tokens').value) || 0;
+            const completionTokens = parseInt(document.getElementById('completion-tokens').value) || 0;
+            const completionRate = parseFloat(document.getElementById('completion-rate').value) || 0;
+            
+            // 计算总tokens
+            const totalTokens = promptTokens + completionTokens * completionRate;
+            
+            // 计算费用
+            const cost = groupRate * modelRate * totalTokens / 500000;
+            
+            // 更新显示
+            document.getElementById('cost').textContent = cost.toFixed(4);
+            document.getElementById('total-tokens').textContent = Math.round(totalTokens);
+        }
+    </script>
+</body>
+</html>
