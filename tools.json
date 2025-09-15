@@ -3,12 +3,22 @@
     {
       "title": "图片转换格式",
       "file": "SVG.html",
-      "category": "工具类别"
+      "category": "格式转换"
     }, 
     {
       "title": "图片PDF转换",
       "file": "PDF.html",
-      "category": "工具类别"
+      "category": "格式转换"
+    },
+    {
+      "title": "AI api token 价格计算器",
+      "file": "AI api token jsq.html",
+      "category": "计算工具"
+    },
+    {
+      "title": "计算器",
+      "file": "jsq.html",
+      "category": "计算工具"
     }
   ]
 }
